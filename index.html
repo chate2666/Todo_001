@@ -59,175 +59,347 @@
       </div>
     </header>
 
-    <!-- Productivity Dashboard / Stats Card -->
-    <section class="stats-card">
-      <div class="stat-item">
-        <div class="stat-icon-wrapper stat-total">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="8" y1="6" x2="21" y2="6"></line>
-            <line x1="8" y1="12" x2="21" y2="12"></line>
-            <line x1="8" y1="18" x2="21" y2="18"></line>
-            <line x1="3" y1="6" x2="3.01" y2="6"></line>
-            <line x1="3" y1="12" x2="3.01" y2="12"></line>
-            <line x1="3" y1="18" x2="3.01" y2="18"></line>
-          </svg>
-        </div>
-        <div class="stat-details">
-          <span class="stat-number" id="stat-total">0</span>
-          <span class="stat-label">Total Tasks</span>
-        </div>
-      </div>
+    <!-- View Navigation Switcher -->
+    <nav class="view-nav" aria-label="Main Navigation">
+      <button id="view-tab-tasks" class="view-tab active" data-view="tasks">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 11 12 14 22 4"></polyline>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        <span>Tasks</span>
+        <span id="nav-tasks-count" class="nav-badge">0</span>
+      </button>
 
-      <div class="stat-item">
-        <div class="stat-icon-wrapper stat-pending">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-          </svg>
-        </div>
-        <div class="stat-details">
-          <span class="stat-number" id="stat-pending">0</span>
-          <span class="stat-label">Pending</span>
-        </div>
-      </div>
+      <button id="view-tab-notepad" class="view-tab" data-view="notepad">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        <span>Notepad</span>
+        <span id="nav-notes-count" class="nav-badge">0</span>
+      </button>
+    </nav>
 
-      <div class="stat-item">
-        <div class="stat-icon-wrapper stat-completed">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-          </svg>
-        </div>
-        <div class="stat-details">
-          <span class="stat-number" id="stat-completed">0</span>
-          <span class="stat-label">Completed</span>
-        </div>
-      </div>
-
-      <div class="progress-block">
-        <div class="progress-header">
-          <span>Completion Rate</span>
-          <span id="progress-percent">0%</span>
-        </div>
-        <div class="progress-track">
-          <div class="progress-fill" id="progress-fill"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Task Creator Form Card -->
-    <section class="task-creator-card">
-      <div class="quick-input-group">
-        <input type="text" id="quick-title-input" class="input-field" placeholder="What needs to be done? Press Enter to add..." autocomplete="off">
-        <button id="btn-toggle-expand" class="btn-secondary" title="Add Details (Priority, Category, Subtasks)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="16"></line>
-            <line x1="8" y1="12" x2="16" y2="12"></line>
-          </svg>
-          Details
-        </button>
-        <button id="btn-add-task" class="btn-primary">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          Add Task
-        </button>
-      </div>
-
-      <!-- Collapsible Detailed Task Options -->
-      <div id="expanded-creator" class="expanded-creator">
-        <div class="form-group">
-          <label class="form-label" for="task-desc-input">Description</label>
-          <textarea id="task-desc-input" class="input-field" rows="2" placeholder="Add additional details or notes..."></textarea>
+    <!-- Tasks View Container -->
+    <div id="tasks-view" class="view-content active">
+      <!-- Productivity Dashboard / Stats Card -->
+      <section class="stats-card">
+        <div class="stat-item">
+          <div class="stat-icon-wrapper stat-total">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+          </div>
+          <div class="stat-details">
+            <span class="stat-number" id="stat-total">0</span>
+            <span class="stat-label">Total Tasks</span>
+          </div>
         </div>
 
-        <div class="form-grid">
+        <div class="stat-item">
+          <div class="stat-icon-wrapper stat-pending">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div class="stat-details">
+            <span class="stat-number" id="stat-pending">0</span>
+            <span class="stat-label">Pending</span>
+          </div>
+        </div>
+
+        <div class="stat-item">
+          <div class="stat-icon-wrapper stat-completed">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <div class="stat-details">
+            <span class="stat-number" id="stat-completed">0</span>
+            <span class="stat-label">Completed</span>
+          </div>
+        </div>
+
+        <div class="progress-block">
+          <div class="progress-header">
+            <span>Completion Rate</span>
+            <span id="progress-percent">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Task Creator Form Card -->
+      <section class="task-creator-card">
+        <div class="quick-input-group">
+          <input type="text" id="quick-title-input" class="input-field" placeholder="What needs to be done? Press Enter to add..." autocomplete="off">
+          <button id="btn-toggle-expand" class="btn-secondary" title="Add Details (Priority, Category, Subtasks)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="16"></line>
+              <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+            Details
+          </button>
+          <button id="btn-add-task" class="btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Task
+          </button>
+        </div>
+
+        <!-- Collapsible Detailed Task Options -->
+        <div id="expanded-creator" class="expanded-creator">
           <div class="form-group">
-            <label class="form-label" for="task-priority-input">Priority Level</label>
-            <select id="task-priority-input" class="select-field">
-              <option value="low">Low Priority</option>
-              <option value="medium" selected>Medium Priority</option>
-              <option value="high">High Priority</option>
-              <option value="urgent">Urgent</option>
+            <label class="form-label" for="task-desc-input">Description</label>
+            <textarea id="task-desc-input" class="input-field" rows="2" placeholder="Add additional details or notes..."></textarea>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="task-priority-input">Priority Level</label>
+              <select id="task-priority-input" class="select-field">
+                <option value="low">Low Priority</option>
+                <option value="medium" selected>Medium Priority</option>
+                <option value="high">High Priority</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="task-category-input">Category</label>
+              <select id="task-category-input" class="select-field">
+                <option value="Personal">Personal</option>
+                <option value="Work" selected>Work</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Health">Health</option>
+                <option value="Ideas">Ideas</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="task-date-input">Due Date</label>
+              <input type="date" id="task-date-input" class="input-field">
+            </div>
+          </div>
+
+          <!-- Subtasks Builder -->
+          <div class="subtasks-builder">
+            <label class="form-label">Subtasks Checklist</label>
+            <div class="subtask-input-row">
+              <input type="text" id="subtask-input" class="input-field" placeholder="Add a subtask step...">
+              <button id="btn-add-subtask-chip" type="button" class="btn-secondary">Add Step</button>
+            </div>
+            <div id="subtasks-chip-container" class="subtask-chip-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Controls Bar: Filter Tabs, Category Filters, Search & Sort -->
+      <section class="controls-bar">
+        <div class="controls-top">
+          <div class="search-wrapper">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="search-input" class="input-field search-input" placeholder="Search tasks by title, category, or note...">
+          </div>
+
+          <div class="sort-wrapper">
+            <label class="form-label" for="sort-select" style="margin:0;">Sort:</label>
+            <select id="sort-select" class="select-field">
+              <option value="created-desc">Newest First</option>
+              <option value="created-asc">Oldest First</option>
+              <option value="priority-desc">Highest Priority</option>
+              <option value="due-asc">Due Date (Soonest)</option>
+              <option value="title-asc">Title (A-Z)</option>
             </select>
           </div>
+        </div>
 
-          <div class="form-group">
-            <label class="form-label" for="task-category-input">Category</label>
-            <select id="task-category-input" class="select-field">
-              <option value="Personal">Personal</option>
-              <option value="Work" selected>Work</option>
-              <option value="Shopping">Shopping</option>
-              <option value="Health">Health</option>
-              <option value="Ideas">Ideas</option>
-            </select>
+        <!-- Status Filter Tabs -->
+        <div class="filter-tabs" id="filter-tabs">
+          <button class="filter-tab active" data-filter="all">All Tasks</button>
+          <button class="filter-tab" data-filter="pending">Pending</button>
+          <button class="filter-tab" data-filter="completed">Completed</button>
+          <button class="filter-tab" data-filter="today">Due Today</button>
+          <button class="filter-tab" data-filter="starred">Starred ⭐</button>
+        </div>
+
+        <!-- Category Filter Chips -->
+        <div class="category-chips" id="category-chips">
+          <button class="cat-chip active" data-cat="all">All Categories</button>
+          <button class="cat-chip" data-cat="Work">Work</button>
+          <button class="cat-chip" data-cat="Personal">Personal</button>
+          <button class="cat-chip" data-cat="Shopping">Shopping</button>
+          <button class="cat-chip" data-cat="Health">Health</button>
+          <button class="cat-chip" data-cat="Ideas">Ideas</button>
+        </div>
+      </section>
+
+      <!-- Tasks List Display -->
+      <main id="tasks-container" class="tasks-container"></main>
+    </div>
+
+    <!-- Notepad View Container -->
+    <div id="notepad-view" class="view-content" style="display: none;">
+      <div class="notepad-layout">
+        <!-- Notes Sidebar -->
+        <aside class="notes-sidebar">
+          <div class="notes-sidebar-header">
+            <button id="btn-new-note" class="btn-primary btn-block">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              New Note
+            </button>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="task-date-input">Due Date</label>
-            <input type="date" id="task-date-input" class="input-field">
+          <div class="notes-search-wrapper">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="notes-search-input" class="input-field notes-search-input" placeholder="Search notes..." autocomplete="off">
           </div>
-        </div>
 
-        <!-- Subtasks Builder -->
-        <div class="subtasks-builder">
-          <label class="form-label">Subtasks Checklist</label>
-          <div class="subtask-input-row">
-            <input type="text" id="subtask-input" class="input-field" placeholder="Add a subtask step...">
-            <button id="btn-add-subtask-chip" type="button" class="btn-secondary">Add Step</button>
+          <div class="notes-category-chips" id="notes-category-chips">
+            <button class="note-cat-chip active" data-cat="all">All</button>
+            <button class="note-cat-chip" data-cat="Ideas">Ideas</button>
+            <button class="note-cat-chip" data-cat="Work">Work</button>
+            <button class="note-cat-chip" data-cat="Personal">Personal</button>
+            <button class="note-cat-chip" data-cat="Scratchpad">Scratchpad</button>
           </div>
-          <div id="subtasks-chip-container" class="subtask-chip-list"></div>
-        </div>
+
+          <div id="notes-list" class="notes-list" role="region" aria-label="Notes list">
+            <!-- Rendered note cards -->
+          </div>
+        </aside>
+
+        <!-- Note Editor Area -->
+        <section class="notes-editor-pane" id="notes-editor-pane">
+          <!-- Active Editor Container -->
+          <div id="note-active-editor" class="note-active-editor">
+            <div class="note-editor-header">
+              <input type="text" id="note-title-input" class="note-title-input" placeholder="Note Title..." autocomplete="off">
+              <div class="note-header-actions">
+                <select id="note-category-select" class="select-field note-cat-select" aria-label="Note Category">
+                  <option value="Ideas">Ideas</option>
+                  <option value="Work">Work</option>
+                  <option value="Personal">Personal</option>
+                  <option value="Scratchpad">Scratchpad</option>
+                </select>
+                <button id="btn-pin-note" class="btn-icon-subtle" title="Pin Note" aria-label="Pin Note">
+                  <svg id="pin-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                  </svg>
+                </button>
+                <button id="btn-delete-note" class="btn-icon-subtle btn-danger-hover" title="Delete Note" aria-label="Delete Note">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Formatting & Utility Toolbar -->
+            <div class="editor-toolbar">
+              <div class="toolbar-tools">
+                <button type="button" class="toolbar-btn" data-tool="bold" title="Bold (**text**)"><strong>B</strong></button>
+                <button type="button" class="toolbar-btn" data-tool="italic" title="Italic (*text*)"><em>I</em></button>
+                <button type="button" class="toolbar-btn" data-tool="checklist" title="Checklist (- [ ])">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 11 12 14 22 4"></polyline>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                  </svg>
+                </button>
+                <button type="button" class="toolbar-btn" data-tool="bullet" title="Bullet List (- )">• List</button>
+                <button type="button" class="toolbar-btn" data-tool="code" title="Code snippet">`Code`</button>
+                <button type="button" class="toolbar-btn" data-tool="timestamp" title="Insert Current Date/Time">📅 Time</button>
+              </div>
+
+              <div class="toolbar-status">
+                <span id="note-save-status" class="save-status">
+                  <svg class="status-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span id="note-save-text">Saved</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Note Content Textarea -->
+            <textarea id="note-content-input" class="note-content-textarea" placeholder="Start typing your thoughts, draft ideas, or checklists..."></textarea>
+
+            <!-- Editor Footer -->
+            <div class="editor-footer">
+              <div class="editor-stats">
+                <span id="note-word-count">0 words</span>
+                <span class="dot-separator">•</span>
+                <span id="note-char-count">0 chars</span>
+                <span class="dot-separator">•</span>
+                <span id="note-updated-time">Updated just now</span>
+              </div>
+
+              <div class="editor-action-buttons">
+                <button id="btn-copy-note" class="btn-secondary" title="Copy full note to clipboard">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  Copy
+                </button>
+                <button id="btn-convert-task" class="btn-primary" title="Convert this note into a Todo task">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 11 12 14 22 4"></polyline>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                  </svg>
+                  Convert to Task
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State (when no note is selected) -->
+          <div id="note-empty-editor" class="note-empty-editor" style="display: none;">
+            <div class="empty-icon">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+            </div>
+            <h3>No Note Selected</h3>
+            <p>Select a note from the list or create a new one to begin writing.</p>
+            <button id="btn-new-note-empty" class="btn-primary" style="margin-top: 1rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Create New Note
+            </button>
+          </div>
+        </section>
       </div>
-    </section>
-
-    <!-- Controls Bar: Filter Tabs, Category Filters, Search & Sort -->
-    <section class="controls-bar">
-      <div class="controls-top">
-        <div class="search-wrapper">
-          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input type="text" id="search-input" class="input-field search-input" placeholder="Search tasks by title, category, or note...">
-        </div>
-
-        <div class="sort-wrapper">
-          <label class="form-label" for="sort-select" style="margin:0;">Sort:</label>
-          <select id="sort-select" class="select-field">
-            <option value="created-desc">Newest First</option>
-            <option value="created-asc">Oldest First</option>
-            <option value="priority-desc">Highest Priority</option>
-            <option value="due-asc">Due Date (Soonest)</option>
-            <option value="title-asc">Title (A-Z)</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Status Filter Tabs -->
-      <div class="filter-tabs" id="filter-tabs">
-        <button class="filter-tab active" data-filter="all">All Tasks</button>
-        <button class="filter-tab" data-filter="pending">Pending</button>
-        <button class="filter-tab" data-filter="completed">Completed</button>
-        <button class="filter-tab" data-filter="today">Due Today</button>
-        <button class="filter-tab" data-filter="starred">Starred ⭐</button>
-      </div>
-
-      <!-- Category Filter Chips -->
-      <div class="category-chips" id="category-chips">
-        <button class="cat-chip active" data-cat="all">All Categories</button>
-        <button class="cat-chip" data-cat="Work">Work</button>
-        <button class="cat-chip" data-cat="Personal">Personal</button>
-        <button class="cat-chip" data-cat="Shopping">Shopping</button>
-        <button class="cat-chip" data-cat="Health">Health</button>
-        <button class="cat-chip" data-cat="Ideas">Ideas</button>
-      </div>
-    </section>
-
-    <!-- Tasks List Display -->
-    <main id="tasks-container" class="tasks-container"></main>
+    </div>
 
   </div>
 
