@@ -9,6 +9,40 @@
   // State Store Keys
   const STORAGE_KEY = 'taskify_tasks_v1';
   const THEME_KEY = 'taskify_theme_v1';
+  const NOTEPAD_STORAGE_KEY = 'taskify_notepad_v1';
+
+  // Sample Notes for First Load
+  const SAMPLE_NOTES = [
+    {
+      id: 'note-1',
+      title: 'Taskify Feature Ideas & Roadmap',
+      content: `Brainstorming key improvements and upcoming ideas:
+- [ ] Add sound effects for task completion
+- [ ] Export tasks and notes to JSON or Markdown
+- [ ] Keyboard shortcuts modal (Press ?)
+- [ ] Pomodoro productivity focus timer
+
+*Tips: You can click "Convert to Task" below to turn this note into a real Todo item with subtasks!*`,
+      category: 'Ideas',
+      pinned: true,
+      createdAt: Date.now() - 3600000 * 24,
+      updatedAt: Date.now() - 3600000 * 2
+    },
+    {
+      id: 'note-2',
+      title: 'Weekly Standup Notes & Agenda',
+      content: `Sprint review deliverables & priorities:
+- Review completed glassmorphism components
+- Test responsive layout on mobile viewports
+- Verify local storage persistence across sessions
+
+Next sync scheduled for Monday 10:00 AM.`,
+      category: 'Work',
+      pinned: false,
+      createdAt: Date.now() - 3600000 * 48,
+      updatedAt: Date.now() - 3600000 * 12
+    }
+  ];
 
   // Sample Tasks for First Load
   const SAMPLE_TASKS = [
@@ -87,6 +121,14 @@
   let tempSubtasks = [];
   let editingTaskId = null;
 
+  // Notepad State
+  let notes = [];
+  let activeNoteId = null;
+  let currentView = 'tasks'; // 'tasks' | 'notepad'
+  let notesCategoryFilter = 'all';
+  let notesSearchQuery = '';
+  let saveNoteTimeout = null;
+
   // DOM Elements
   const el = {
     themeToggle: document.getElementById('theme-toggle'),
@@ -94,6 +136,14 @@
     themeIconSun: document.getElementById('theme-icon-sun'),
     btnReset: document.getElementById('btn-reset'),
     
+    // View Navigation
+    viewTabTasks: document.getElementById('view-tab-tasks'),
+    viewTabNotepad: document.getElementById('view-tab-notepad'),
+    tasksView: document.getElementById('tasks-view'),
+    notepadView: document.getElementById('notepad-view'),
+    navTasksCount: document.getElementById('nav-tasks-count'),
+    navNotesCount: document.getElementById('nav-notes-count'),
+
     // Stats
     statTotal: document.getElementById('stat-total'),
     statPending: document.getElementById('stat-pending'),
@@ -134,6 +184,31 @@
     btnCancelEdit: document.getElementById('btn-cancel-edit'),
     btnSaveEdit: document.getElementById('btn-save-edit'),
 
+    // Notepad Sidebar
+    btnNewNote: document.getElementById('btn-new-note'),
+    btnNewNoteEmpty: document.getElementById('btn-new-note-empty'),
+    notesSearchInput: document.getElementById('notes-search-input'),
+    notesCategoryChips: document.getElementById('notes-category-chips'),
+    notesList: document.getElementById('notes-list'),
+
+    // Notepad Editor
+    notesEditorPane: document.getElementById('notes-editor-pane'),
+    noteActiveEditor: document.getElementById('note-active-editor'),
+    noteEmptyEditor: document.getElementById('note-empty-editor'),
+    noteTitleInput: document.getElementById('note-title-input'),
+    noteCategorySelect: document.getElementById('note-category-select'),
+    btnPinNote: document.getElementById('btn-pin-note'),
+    pinIcon: document.getElementById('pin-icon'),
+    btnDeleteNote: document.getElementById('btn-delete-note'),
+    noteContentInput: document.getElementById('note-content-input'),
+    noteSaveStatus: document.getElementById('note-save-status'),
+    noteSaveText: document.getElementById('note-save-text'),
+    noteWordCount: document.getElementById('note-word-count'),
+    noteCharCount: document.getElementById('note-char-count'),
+    noteUpdatedTime: document.getElementById('note-updated-time'),
+    btnCopyNote: document.getElementById('btn-copy-note'),
+    btnConvertTask: document.getElementById('btn-convert-task'),
+
     // Toast Container
     toastContainer: document.getElementById('toast-container')
   };
@@ -150,8 +225,10 @@
   function init() {
     loadTheme();
     loadTasks();
+    loadNotes();
     bindEvents();
     render();
+    renderNotepad();
   }
 
   // Load / Save Local Storage
@@ -281,6 +358,64 @@
     el.editModal.addEventListener('click', (e) => {
       if (e.target === el.editModal) closeModal();
     });
+
+    // View Navigation Tabs
+    el.viewTabTasks.addEventListener('click', () => switchView('tasks'));
+    el.viewTabNotepad.addEventListener('click', () => switchView('notepad'));
+
+    // Notepad Actions
+    el.btnNewNote.addEventListener('click', createNewNote);
+    el.btnNewNoteEmpty.addEventListener('click', createNewNote);
+
+    // Search Notes
+    el.notesSearchInput.addEventListener('input', (e) => {
+      notesSearchQuery = e.target.value.toLowerCase().trim();
+      renderNotesList();
+    });
+
+    // Notes Category Filter Chips
+    el.notesCategoryChips.addEventListener('click', (e) => {
+      const chip = e.target.closest('.note-cat-chip');
+      if (!chip) return;
+      document.querySelectorAll('.note-cat-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      notesCategoryFilter = chip.getAttribute('data-cat');
+      renderNotesList();
+    });
+
+    // Note Inputs
+    el.noteTitleInput.addEventListener('input', () => onNoteInputChange('title'));
+    el.noteContentInput.addEventListener('input', () => onNoteInputChange('content'));
+    el.noteCategorySelect.addEventListener('change', () => onNoteInputChange('category'));
+
+    // Note Toolbar & Actions
+    el.btnPinNote.addEventListener('click', togglePinActiveNote);
+    el.btnDeleteNote.addEventListener('click', deleteActiveNote);
+    el.btnCopyNote.addEventListener('click', copyActiveNote);
+    el.btnConvertTask.addEventListener('click', convertActiveNoteToTask);
+
+    // Formatting Tools
+    const toolbar = document.querySelector('.editor-toolbar');
+    if (toolbar) {
+      toolbar.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-tool]');
+        if (btn) {
+          applyFormatting(btn.getAttribute('data-tool'));
+        }
+      });
+    }
+
+    // Keyboard Shortcuts: Ctrl+S to save note (prevent browser save dialog), Alt+N for new note
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        if (currentView === 'notepad') {
+          e.preventDefault();
+          saveNotes();
+          setSavingStatus(false);
+          showToast('Note saved ✓', 'info');
+        }
+      }
+    });
   }
 
   // Add Subtask Chip inside creation form
@@ -393,6 +528,8 @@
 
   // Render UI
   function render() {
+    updateNavBadges();
+
     // 1. Update Stats
     const totalCount = tasks.length;
     const completedCount = tasks.filter(t => t.completed).length;
@@ -625,6 +762,422 @@
     closeModal();
     render();
     showToast('Task updated successfully!', 'success');
+  }
+
+  // ==========================================
+  // Notepad System & Business Logic
+  // ==========================================
+
+  function loadNotes() {
+    const raw = localStorage.getItem(NOTEPAD_STORAGE_KEY);
+    if (raw) {
+      try {
+        notes = JSON.parse(raw);
+      } catch (e) {
+        notes = [...SAMPLE_NOTES];
+      }
+    } else {
+      notes = [...SAMPLE_NOTES];
+      saveNotes();
+    }
+    if (notes.length > 0 && !activeNoteId) {
+      activeNoteId = notes[0].id;
+    }
+  }
+
+  function saveNotes() {
+    localStorage.setItem(NOTEPAD_STORAGE_KEY, JSON.stringify(notes));
+    updateNavBadges();
+  }
+
+  function updateNavBadges() {
+    const pendingCount = tasks.filter(t => !t.completed).length;
+    if (el.navTasksCount) el.navTasksCount.textContent = pendingCount;
+    if (el.navNotesCount) el.navNotesCount.textContent = notes.length;
+  }
+
+  function switchView(view) {
+    currentView = view;
+    if (view === 'tasks') {
+      el.viewTabTasks.classList.add('active');
+      el.viewTabNotepad.classList.remove('active');
+      el.tasksView.style.display = 'flex';
+      el.notepadView.style.display = 'none';
+      render();
+    } else {
+      el.viewTabNotepad.classList.add('active');
+      el.viewTabTasks.classList.remove('active');
+      el.tasksView.style.display = 'none';
+      el.notepadView.style.display = 'flex';
+      renderNotepad();
+    }
+  }
+
+  function getFilteredNotes() {
+    return notes.filter(note => {
+      // Category filter
+      if (notesCategoryFilter !== 'all' && note.category !== notesCategoryFilter) {
+        return false;
+      }
+      // Search filter
+      if (notesSearchQuery) {
+        const titleMatch = (note.title || '').toLowerCase().includes(notesSearchQuery);
+        const contentMatch = (note.content || '').toLowerCase().includes(notesSearchQuery);
+        const catMatch = (note.category || '').toLowerCase().includes(notesSearchQuery);
+        if (!titleMatch && !contentMatch && !catMatch) return false;
+      }
+      return true;
+    }).sort((a, b) => {
+      // Pinned notes first
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      // Then newest updated first
+      return (b.updatedAt || 0) - (a.updatedAt || 0);
+    });
+  }
+
+  function renderNotepad() {
+    renderNotesList();
+    renderActiveNoteEditor();
+    updateNavBadges();
+  }
+
+  function renderNotesList() {
+    const filtered = getFilteredNotes();
+
+    // Check if activeNoteId still exists in filtered notes; if not, select the first
+    if (filtered.length > 0 && !filtered.some(n => n.id === activeNoteId)) {
+      activeNoteId = filtered[0].id;
+      renderActiveNoteEditor();
+    } else if (filtered.length === 0) {
+      activeNoteId = null;
+      renderActiveNoteEditor();
+    }
+
+    if (filtered.length === 0) {
+      el.notesList.innerHTML = `
+        <div class="empty-state" style="padding: 2.5rem 1rem;">
+          <p style="font-size: 0.875rem; color: var(--text-dim); text-align: center;">No notes match your filters.</p>
+        </div>
+      `;
+      return;
+    }
+
+    el.notesList.innerHTML = filtered.map(note => {
+      const isActive = note.id === activeNoteId;
+      const excerpt = note.content ? note.content.replace(/[#*`_\[\]-]/g, '').trim() : 'No additional text...';
+      return `
+        <div class="note-card ${isActive ? 'active' : ''}" data-id="${note.id}">
+          <div class="note-card-header">
+            <span class="note-card-title">${escapeHTML(note.title || 'Untitled Note')}</span>
+            ${note.pinned ? `
+              <span class="note-card-pin" title="Pinned Note">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </span>
+            ` : ''}
+          </div>
+          <p class="note-card-excerpt">${escapeHTML(excerpt)}</p>
+          <div class="note-card-meta">
+            <span class="note-card-badge cat-${note.category}">${escapeHTML(note.category)}</span>
+            <span class="note-card-date">${formatTimeAgo(note.updatedAt)}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach click events to cards
+    el.notesList.querySelectorAll('.note-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const id = card.getAttribute('data-id');
+        selectNote(id);
+      });
+    });
+  }
+
+  function renderActiveNoteEditor() {
+    const note = notes.find(n => n.id === activeNoteId);
+    if (!note) {
+      el.noteActiveEditor.style.display = 'none';
+      el.noteEmptyEditor.style.display = 'flex';
+      return;
+    }
+
+    el.noteActiveEditor.style.display = 'flex';
+    el.noteEmptyEditor.style.display = 'none';
+
+    el.noteTitleInput.value = note.title || '';
+    el.noteContentInput.value = note.content || '';
+    el.noteCategorySelect.value = note.category || 'Ideas';
+
+    if (note.pinned) {
+      el.btnPinNote.classList.add('pinned');
+      el.pinIcon.setAttribute('fill', 'currentColor');
+    } else {
+      el.btnPinNote.classList.remove('pinned');
+      el.pinIcon.setAttribute('fill', 'none');
+    }
+
+    setSavingStatus(false);
+    updateEditorStats(note);
+  }
+
+  function selectNote(id) {
+    if (activeNoteId === id) return;
+    activeNoteId = id;
+
+    // Update active class in sidebar list
+    el.notesList.querySelectorAll('.note-card').forEach(card => {
+      if (card.getAttribute('data-id') === id) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
+      }
+    });
+
+    renderActiveNoteEditor();
+  }
+
+  function createNewNote() {
+    const newNote = {
+      id: 'note-' + Date.now(),
+      title: 'Untitled Note',
+      content: '',
+      category: notesCategoryFilter !== 'all' ? notesCategoryFilter : 'Ideas',
+      pinned: false,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+
+    notes.unshift(newNote);
+    activeNoteId = newNote.id;
+    saveNotes();
+    renderNotepad();
+    showToast('New note created', 'info');
+
+    // Focus note title input for immediate writing
+    setTimeout(() => {
+      if (el.noteTitleInput) {
+        el.noteTitleInput.focus();
+        el.noteTitleInput.select();
+      }
+    }, 50);
+  }
+
+  function togglePinActiveNote() {
+    const note = notes.find(n => n.id === activeNoteId);
+    if (!note) return;
+
+    note.pinned = !note.pinned;
+    note.updatedAt = Date.now();
+    saveNotes();
+    renderNotepad();
+    showToast(note.pinned ? 'Note pinned to top 📌' : 'Note unpinned', 'info');
+  }
+
+  function deleteActiveNote() {
+    const noteIndex = notes.findIndex(n => n.id === activeNoteId);
+    if (noteIndex === -1) return;
+
+    const note = notes[noteIndex];
+    if (!confirm(`Delete note "${note.title}"?`)) return;
+
+    notes.splice(noteIndex, 1);
+    activeNoteId = notes.length > 0 ? notes[0].id : null;
+    saveNotes();
+    renderNotepad();
+    showToast(`Deleted note "${note.title}"`, 'danger');
+  }
+
+  function onNoteInputChange(field) {
+    const note = notes.find(n => n.id === activeNoteId);
+    if (!note) return;
+
+    if (field === 'title') {
+      note.title = el.noteTitleInput.value.trim() || 'Untitled Note';
+    } else if (field === 'content') {
+      note.content = el.noteContentInput.value;
+    } else if (field === 'category') {
+      note.category = el.noteCategorySelect.value;
+    }
+    note.updatedAt = Date.now();
+
+    updateEditorStats(note);
+    updateNoteCardInList(note);
+
+    setSavingStatus(true);
+    clearTimeout(saveNoteTimeout);
+    saveNoteTimeout = setTimeout(() => {
+      saveNotes();
+      setSavingStatus(false);
+    }, 350);
+  }
+
+  function updateNoteCardInList(note) {
+    const card = el.notesList.querySelector(`.note-card[data-id="${note.id}"]`);
+    if (!card) return;
+
+    const titleEl = card.querySelector('.note-card-title');
+    const excerptEl = card.querySelector('.note-card-excerpt');
+    const dateEl = card.querySelector('.note-card-date');
+    const badgeEl = card.querySelector('.note-card-badge');
+
+    if (titleEl) titleEl.textContent = note.title || 'Untitled Note';
+    if (excerptEl) {
+      const excerpt = note.content ? note.content.replace(/[#*`_\[\]-]/g, '').trim() : 'No additional text...';
+      excerptEl.textContent = excerpt;
+    }
+    if (dateEl) dateEl.textContent = formatTimeAgo(note.updatedAt);
+    if (badgeEl) {
+      badgeEl.textContent = note.category;
+      badgeEl.className = `note-card-badge cat-${note.category}`;
+    }
+  }
+
+  function updateEditorStats(note) {
+    const text = note.content || '';
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const chars = text.length;
+
+    if (el.noteWordCount) el.noteWordCount.textContent = `${words} word${words === 1 ? '' : 's'}`;
+    if (el.noteCharCount) el.noteCharCount.textContent = `${chars} char${chars === 1 ? '' : 's'}`;
+    if (el.noteUpdatedTime) el.noteUpdatedTime.textContent = `Updated ${formatTimeAgo(note.updatedAt)}`;
+  }
+
+  function setSavingStatus(saving) {
+    if (!el.noteSaveStatus || !el.noteSaveText) return;
+    if (saving) {
+      el.noteSaveStatus.classList.add('saving');
+      el.noteSaveText.textContent = 'Saving...';
+    } else {
+      el.noteSaveStatus.classList.remove('saving');
+      el.noteSaveText.textContent = 'Saved';
+    }
+  }
+
+  function copyActiveNote() {
+    const note = notes.find(n => n.id === activeNoteId);
+    if (!note) return;
+
+    const textToCopy = `${note.title}\n\n${note.content || ''}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        showToast('Note copied to clipboard! 📋', 'success');
+      }).catch(() => {
+        showToast('Could not copy to clipboard', 'danger');
+      });
+    } else {
+      showToast('Clipboard copy unavailable', 'danger');
+    }
+  }
+
+  function convertActiveNoteToTask() {
+    const note = notes.find(n => n.id === activeNoteId);
+    if (!note) return;
+
+    const lines = (note.content || '').split('\n');
+    const subtasks = [];
+    const descLines = [];
+
+    lines.forEach((line, i) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('- [ ] ') || trimmed.startsWith('- [x] ')) {
+        subtasks.push({
+          id: `sub-${Date.now()}-${i}`,
+          text: trimmed.replace(/^- \[[ x]\] /, '').trim(),
+          completed: trimmed.startsWith('- [x] ')
+        });
+      } else if (trimmed.startsWith('- ')) {
+        subtasks.push({
+          id: `sub-${Date.now()}-${i}`,
+          text: trimmed.substring(2).trim(),
+          completed: false
+        });
+      } else if (trimmed) {
+        descLines.push(trimmed);
+      }
+    });
+
+    const validCategories = ['Personal', 'Work', 'Shopping', 'Health', 'Ideas'];
+    const taskCategory = validCategories.includes(note.category) ? note.category : 'Ideas';
+
+    const newTask = {
+      id: 'task-' + Date.now(),
+      title: note.title || 'Task from Note',
+      description: descLines.slice(0, 3).join(' '),
+      priority: 'medium',
+      category: taskCategory,
+      dueDate: '',
+      completed: false,
+      starred: note.pinned || false,
+      subtasks: subtasks,
+      createdAt: Date.now()
+    };
+
+    tasks.unshift(newTask);
+    saveTasks();
+    render();
+    switchView('tasks');
+    showToast(`Converted note to task: "${newTask.title}"! 🎉`, 'success');
+  }
+
+  function applyFormatting(tool) {
+    const textarea = el.noteContentInput;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selected = text.substring(start, end);
+
+    let replacement = '';
+
+    switch (tool) {
+      case 'bold':
+        replacement = `**${selected || 'bold text'}**`;
+        break;
+      case 'italic':
+        replacement = `*${selected || 'italic text'}*`;
+        break;
+      case 'checklist':
+        replacement = selected ? selected.split('\n').map(l => `- [ ] ${l}`).join('\n') : '- [ ] ';
+        break;
+      case 'bullet':
+        replacement = selected ? selected.split('\n').map(l => `- ${l}`).join('\n') : '- ';
+        break;
+      case 'code':
+        if (selected.includes('\n')) {
+          replacement = `\`\`\`\n${selected}\n\`\`\``;
+        } else {
+          replacement = `\`${selected || 'code'}\``;
+        }
+        break;
+      case 'timestamp':
+        const now = new Date();
+        replacement = `[${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}] `;
+        break;
+      default:
+        return;
+    }
+
+    textarea.focus();
+    textarea.setRangeText(replacement, start, end, 'end');
+    onNoteInputChange('content');
+  }
+
+  function formatTimeAgo(timestamp) {
+    if (!timestamp) return 'just now';
+    const elapsed = Date.now() - timestamp;
+    const mins = Math.floor(elapsed / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    const d = new Date(timestamp);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
   // Toast System
